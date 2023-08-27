@@ -105,5 +105,5 @@ model {
     mrp_vote[n] ~ bernoulli(theta[n]);
   }
   
-  mrp_beta ~ normal(0, 2);
+  mrp_beta ~ normal(0, 5);
 }
