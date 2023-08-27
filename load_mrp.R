@@ -6,11 +6,12 @@ library(dplyr)
 MRP_URL <- "https://raw.githubusercontent.com/RohanAlexander/ForecastingMultiDistrictElections/master/outputs/data/"
 PS_URL <- paste0(MRP_URL, "poststratification_data/census_data.csv")
 POLL_URL <- paste0(MRP_URL, "regression_data/LinA.csv")
-
+RESULTS_URL <- paste0(MRP_URL, "elections/data_from_earlier_elections_on_2019_div_basis.csv")
 
 # Load --------------------------------------------------------------------
 df_poll <- read.csv(POLL_URL)
 df_ps   <- read.csv(PS_URL)
+df_res   <- read.csv(RESULTS_URL)
 
 # Impute ------------------------------------------------------------------
 # We will impute our own TPP using a fairly naive method. We first randomly
@@ -40,3 +41,4 @@ with(df_poll, table(first_pref) / nrow(df_poll)) |> round(2)
 
 write.csv(df_poll, "data/lina.csv", row.names = FALSE)
 write.csv(df_ps, "data/poststratification_table.csv", row.names = FALSE)
+write.csv(df_res, "data/past_results.csv", row.names = FALSE)

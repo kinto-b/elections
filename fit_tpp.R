@@ -27,12 +27,10 @@ ggplot() +
 
 ggsave("plots/polls.png")
 
-# TPP --------------------------------------------------------------------------
-# See models/tpp.stan for a description of the model.
-
-# Focus on 2019 cycle
-start_date <- as.Date("2016-08-01")
-end_date <- as.Date("2019-05-18")
+# Subset -----------------------------------------------------------------------
+# We'll do two cycles
+start_date <- as.Date("2013-09-07")
+end_date <- as.Date("2019-05-17") # Day before election
 
 results$pollster <- "Election"
 df <- results |> 
@@ -45,7 +43,7 @@ df <- results |>
   filter(date >= start_date, date <= end_date)
 df$pollster <- factor(df$pollster)
 df$pollster <- forcats::fct_relevel(df$pollster, "Election", after=Inf)
-df$week <- ceiling(as.numeric((df$date - as.Date(start_date))/7) )
+df$week <- ceiling(as.numeric((df$date - as.Date(start_date))/7))+1
 
 standat <- list(
   intention0 = df$obs[1], # First obs is an election
@@ -56,17 +54,22 @@ standat <- list(
   obs_pollster = as.integer(df$pollster),
   obs_step = df$week
 )
+saveRDS(standat, "interim/tpp_standat.Rds")
 
+
+# Fit --------------------------------------------------------------------------
+# See models/tpp.stan for a description of the model.
 fit_tpp <- stan("models/tpp.stan", data = standat)
 
+# Diagnostics
 rstan::check_hmc_diagnostics(fit_tpp)
-
 rstan::stan_ess(fit_tpp)
 rstan::stan_rhat(fit_tpp)
 rstan::stan_mcse(fit_tpp, "intention")
 rstan::stan_trace(fit_tpp, "intention[100]")
+# bayesplot::mcmc_pairs(fit_tpp, regex_pars = "poll_bias")
 
-bayesplot::mcmc_pairs(fit_tpp, regex_pars = "poll_bias")
+# Plots ------------------------------------------------------------------------
 
 # The latent intention looks like:
 x <- rstan::extract(fit_tpp, "intention")[[1]]
@@ -90,7 +93,7 @@ ggsave("plots/tpp.png")
 x <- rstan::extract(fit_tpp, "poll_bias")[[1]]
 x |> 
   as_tibble() |> 
-  setNames(levels(df$pollster)[1:6]) |> 
+  setNames(levels(df$pollster)[1:ncol(x)]) |> 
   tidyr::pivot_longer(everything(), names_to = "pollster", values_to = "bias") |> 
   ggplot() +
   geom_violin(aes(pollster, bias, fill=pollster)) +
