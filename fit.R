@@ -3,6 +3,7 @@ library(rstan)
 library(dplyr)
 CONSTS <- config::get()
 options(mc.cores=parallel::detectCores())
+options(readr.show_col_types = FALSE)
 
 # Load -------------------------------------------------------------------------
 polls_national <- readr::read_csv("data/polls_national.csv")
@@ -87,7 +88,7 @@ standat <- list(
 )
 
 # Fit and check diagnostics
-fit <- stan("models/model.stan", data = standat)
+fit <- stan("models/model.stan", data = standat, iter = 5000)
 
 rstan::check_hmc_diagnostics(fit)
 rstan::stan_ess(fit) 

@@ -1,0 +1,18 @@
+---
+title: "TBD"
+author: "Kinto Behr"
+format: html
+---
+
+TODO
+
+```{r}
+ps_pred1 <-  readRDS("outputs/seat_predictionsv1.csv")
+ps_pred2 <- readRDS("outputs/seat_predictionsv2.csv")
+ps_sim <- readRDS("outputs/election_simulations.csv")
+
+ps_sim |> summarise(n = sum(nseats > 75), N = n(), p = n/N)
+table(ps_pred1$prediction, ps_pred1$result) |> kableExtra::kable()
+table(ps_pred2$prediction, ps_pred2$result) |> kableExtra::kable()
+```
+

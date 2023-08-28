@@ -101,9 +101,10 @@ model {
   // MRP:
   for (n in 1:mrp_N) {
     int d = mrp_d[n];
-    mrp_tpp_curr[d] ~ normal(mrp_tpp_prev[d] + pp_intention[pp_T] - pp_tpp_prev, 5);
+    mrp_tpp_curr[d] ~ normal(mrp_tpp_prev[d] + pp_intention[pp_T] - pp_tpp_prev, 10);
     mrp_vote[n] ~ bernoulli(theta[n]);
   }
   
-  mrp_beta ~ normal(0, 5);
+  // TODO: Should make our prior more specific than this
+  mrp_beta ~ normal(0, 10); 
 }

@@ -4,6 +4,7 @@ library(ggplot2)
 library(purrr)
 CONSTS <- config::get()
 PROBS <- c(0.025, 0.25, 0.5, 0.75, 0.975)
+options(readr.show_col_types = FALSE)
 
 # Load --------------------------------------------------------------------
 
@@ -17,7 +18,7 @@ polls_national <- readr::read_csv("data/polls_national.csv") |>
 results_national <- readr::read_csv("data/results_national.csv") |> 
   filter(year %in% 2016:2019, party=="tpp")
 
-results_by_division <- results_by_division |> 
+results_by_division <- readr::read_csv("data/tpp_by_division.csv") |> 
   tidyr::pivot_wider(names_from = year, values_from = tpp) |> 
   transmute(division, tpp = `2019`, tpp_prev = `2016`)
 
@@ -105,7 +106,7 @@ ps_sum <- ps_est |>
   group_by(division) |> 
   summarise(across(est, p_funs)) |> 
   left_join(results_by_division, "division") |> 
-  left_join(lina |> group_by(division) |> summarise(raw = sum(tpp_imputed=="ALP")/n())) |> 
+  # left_join(lina |> group_by(division) |> summarise(raw = sum(tpp_imputed=="ALP")/n())) |> 
   mutate(division = ordered2(division, `est_50%`))
 
 ps_sum |> 
@@ -115,7 +116,7 @@ ps_sum |>
   geom_linerange(aes(xmin=`est_25%`, xmax = `est_75%`)) +
   geom_point(aes(x=tpp, y = division), colour = "blue", size=1) + 
   geom_point(aes(x=tpp_prev, y = division), colour = "green", size=1) + 
-  geom_point(aes(x=raw*100, y = division), colour = "red", size=1) + 
+  # geom_point(aes(x=raw*100, y = division), colour = "red", size=1) + 
   geom_vline(xintercept = 50, linetype=2) +
   ggtitle(
     "TPP (ALP) posterior median and central 50% (black) and 95% (grey) intervals", 
@@ -124,3 +125,4 @@ ps_sum |>
   xlab("") + ylab("") + 
   theme_classic() + theme(axis.text.y = element_text(size = 5))
 ggsave("plots/estimates.png", height = 10)
+
