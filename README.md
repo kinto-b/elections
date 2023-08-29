@@ -14,7 +14,9 @@ firm. Mathematically, we express this as
 
 $$
 \text{poll}_i \sim N(\pi_{t[i]} + b_{p[i]}, \sigma_{\text{poll}}^2)
-$$ $$
+$$
+
+$$
 \pi_t \sim N(\pi_{t-1}, \sigma_\pi^2)
 $$
 
@@ -67,9 +69,9 @@ corresponding to record $i$ on voting intention.
 We use normal priors on each of the effect terms
 
 $$
-\alpha_d \sim N(\tilde \phi_d, 5); \; 
-\beta_a  \sim N(0, 5); \;
-\gamma_s \sim N(0, 2); \;
+\alpha_d \sim N(\tilde \phi_d, 5); \, 
+\beta_a  \sim N(0, 5); \,
+\gamma_s \sim N(0, 2); \,
 \delta_e \sim N(0, 5)
 $$
 
