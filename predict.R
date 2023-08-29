@@ -34,11 +34,11 @@ ps_pred1 <- ps_est |>
   mutate(
     prediction = case_when(
       `est_50%` < 40 ~ "Safe loss",
-      `est_50%` < 43 | `est_97.5%` < 50 ~ "Fairly safe loss",
-      `est_50%` < 48 | `est_75%` < 50 ~ "Marginal loss",
+      `est_50%` < 43  ~ "Fairly safe loss",
+      `est_50%` < 48 ~ "Marginal loss",
       `est_50%` > 60 ~ "Safe win",
-      `est_50%` > 57 | `est_2.5%` > 50 ~ "Fairly safe win",
-      `est_50%` > 52 | `est_25%` > 50 ~ "Marginal win",
+      `est_50%` > 57  ~ "Fairly safe win",
+      `est_50%` > 52 ~ "Marginal win",
       TRUE ~ "Too close to call"
     ),
     prediction = factor(
@@ -85,8 +85,8 @@ ps_sim <- ps_sim |>
 
 # Save --------------------------------------------------------------------
 
-saveRDS(ps_pred1, "outputs/seat_predictionsv1.csv")
-saveRDS(ps_pred2, "outputs/seat_predictionsv2.csv")
-saveRDS(ps_sim, "outputs/election_simulations.csv")
+saveRDS(ps_pred1, "outputs/seat_predictionsv1.Rds")
+saveRDS(ps_pred2, "outputs/seat_predictionsv2.Rds")
+saveRDS(ps_sim, "outputs/election_simulations.Rds")
 
 

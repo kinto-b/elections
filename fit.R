@@ -83,24 +83,40 @@ walkdat <- list(
   poll_pollster = as.integer(df_national$pollster)
 )
 
-fitwalk <- stan("models/walk.stan", data = walkdat, seed = 2023-08-28)
+# fitwalk <- stan("models/walk.stan", data = walkdat, seed = 2023-08-28)
 
 mrpdat <- list(
   n_records = nrow(X),
   n_covariates = ncol(X),
   n_divisions = nlevels(lina$division),
   record_division = as.numeric(lina$division),
-  x = X,
+
+  age_record = as.integer(lina$age_group),
+  sex_record = as.integer(lina$gender),
+  educ_record = as.integer(lina$education),
+
   tpp_div_prev = results_by_division$tpp_prev,
   tpp_record = (lina$tpp_imputed=="ALP")*1
 )
 
-fitmrp <- stan("models/mrp.stan", data = mrpdat, seed = 2023-08-28)
+
+# fitmrp <- stan(
+#   "models/mrp.stan",
+#   data = mrpdat,
+#   seed = 2023-08-28,
+#   control=list(adapt_delta=0.90)
+# )
 
 # Fit --------------------------------------------------------------------------
 # Now we fit the main model
 standat <- c(walkdat, mrpdat)
-fit <- stan("models/model.stan", data = standat, iter = 5000, seed = 2023-08-28)
+fit <- stan(
+    "models/model.stan",
+    data = standat,
+    iter = 5000,
+    seed = 2023-08-28,
+    control=list(adapt_delta=0.90)
+  )
 
 rstan::check_hmc_diagnostics(fit)
 rstan::stan_ess(fit) 
@@ -112,23 +128,30 @@ tpp_walk <- rstan::extract(fit, "walk")[[1]]
 poll_bias <- rstan::extract(fit, "poll_bias")[[1]]
 colnames(poll_bias) <- levels(df_national$pollster)[1:ncol(poll_bias)]
 
+
 # Extract coefficients
-beta_draws <- rstan::extract(fit, "beta")[[1]]
-alpha_draws <-  rstan::extract(fit, "tpp_div_curr")[[1]]
+params <- list(
+  age_group = rstan::extract(fit, "b_age")[[1]] |> `colnames<-`(levels(lina$age_group)),
+  gender = rstan::extract(fit, "b_sex")[[1]] |> `colnames<-`(levels(lina$gender)),
+  education = rstan::extract(fit, "b_educ")[[1]] |> `colnames<-`(levels(lina$education)),
+  division = rstan::extract(fit, "tpp_div_curr")[[1]] |> `colnames<-`(levels(lina$division))
+)
+
+boxplot(params$age_group)
+boxplot(params$education)
 
 # Post-stratify
-ps_x <- model.matrix(~ 0 + gender + age_group + education, data=ps)
-ps_x <- ps_x[, -1] # Don't need two columns for gender
+ps_est <- purrr::imap(params, function(coef, nm){ 
+  t(coef)[as.numeric(ps[[nm]]), ]
+})
+ps_est <- purrr::reduce(ps_est, `+`)
+colnames(ps_est) <- paste0("est[", 1:ncol(ps_est), "]")
 
-ps_theta <- ps_x %*% t(beta_draws) + t(alpha_draws)[as.numeric(ps$division), ]
-colnames(ps_theta) <- paste0("est[", 1:ncol(ps_theta), "]")
-
-ps_est <- cbind(ps, ps_theta) |> 
+ps_est <- cbind(ps, ps_est) |> 
   group_by(division) |> 
   summarise(across(starts_with("est["), ~sum(.*number)/sum(number))) |> 
   tidyr::pivot_longer(starts_with("est["), names_to = "rep", values_to = "est") |> 
   mutate(rep = stringr::str_extract(rep, "\\d+"))
-
 
 # Save -------------------------------------------------------------------------
 

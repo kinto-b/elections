@@ -7,7 +7,7 @@ clean:
 	rm -rf data outputs
 
 load:
-	load.R
+	Rscript load.R
 
 results:
 	Rscript fit.R
@@ -19,5 +19,5 @@ predictions: results
 	Rscript predict.R
 
 report: plots predictions
-	Rscript -e "rmarkdown::render('report.qmd')"
+	Rscript -e "rmarkdown::render('README.qmd')"
 
