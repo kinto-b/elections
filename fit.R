@@ -36,7 +36,12 @@ results_by_division <- results_by_division |> filter(division %in% lina$division
 
 # Convert to factor and ensuring that levels match:
 lina <- lina |> 
-  mutate(across(c(division, education, gender, age_group), factor))
+  mutate(
+    division = factor(division),
+    gender = factor(gender),
+    age_group = factor(age_group, c("ages18to29", "ages30to44", "ages45to59", "ages60plus")),
+    education = factor(education, c("highSchoolorCertIorIIorLess", "gradDipDipCertIIIandIV", "bachelorDegree", "postgraduateDegree"))
+  )
 
 for (var in c('division', 'education', 'gender', 'age_group')) {
   ps[[var]] <- factor(ps[[var]], levels(lina[[var]]))
@@ -60,35 +65,42 @@ df_national$pollster <- factor(df_national$pollster)
 df_national$pollster <- forcats::fct_relevel(df_national$pollster, "Election", after=Inf)
 df_national$week <- ceiling(as.numeric((df_national$date - min(df_national$date))/7))+1
 
-# Fit --------------------------------------------------------------------------
-
 # Create dummies:
 X <- model.matrix(~ 0 + gender + age_group + education, data=lina)
+X <- X[,-1] # Don't need two columns for gender
 
-# Now create a list to pass to stan
-standat <- list(
-  # Poll-of-polls
-  pp_T =  max(df_national$week),
-  pp_N = nrow(df_national),
-  pp_P = nlevels(df_national$pollster)-1, # Treating election as special pollster,
-  pp_tpp0 = results_national$vote[1],
-  pp_tpp_prev = results_national$vote[nrow(results_national)-1],
-  pp_obs = df_national$obs,
-  pp_t = df_national$week,
-  pp_p = as.integer(df_national$pollster),
-  
-  # MRP
-  mrp_N = nrow(X),
-  mrp_K = ncol(X),
-  mrp_D = nlevels(lina$division),
-  mrp_d = as.numeric(lina$division),
-  mrp_x = X,
-  mrp_tpp_prev = results_by_division$tpp_prev,
-  mrp_vote = (lina$tpp_imputed=="ALP")*1
+# Test -------------------------------------------------------------------------
+# Before we fit the main model, we test fitting the components:
+
+walkdat <- list(
+  n_timesteps =  max(df_national$week),
+  n_polls = nrow(df_national),
+  n_pollsters = nlevels(df_national$pollster)-1, # Treating election as special pollster,
+  walk0 = results_national$vote[1],
+  tpp_nat_prev = results_national$vote[nrow(results_national)-1],
+  polls = df_national$obs,
+  poll_timestep = df_national$week,
+  poll_pollster = as.integer(df_national$pollster)
 )
 
-# Fit and check diagnostics
-fit <- stan("models/model.stan", data = standat, iter = 5000)
+fitwalk <- stan("models/walk.stan", data = walkdat, seed = 2023-08-28)
+
+mrpdat <- list(
+  n_records = nrow(X),
+  n_covariates = ncol(X),
+  n_divisions = nlevels(lina$division),
+  record_division = as.numeric(lina$division),
+  x = X,
+  tpp_div_prev = results_by_division$tpp_prev,
+  tpp_record = (lina$tpp_imputed=="ALP")*1
+)
+
+fitmrp <- stan("models/mrp.stan", data = mrpdat, seed = 2023-08-28)
+
+# Fit --------------------------------------------------------------------------
+# Now we fit the main model
+standat <- c(walkdat, mrpdat)
+fit <- stan("models/model.stan", data = standat, iter = 5000, seed = 2023-08-28)
 
 rstan::check_hmc_diagnostics(fit)
 rstan::stan_ess(fit) 
@@ -96,16 +108,18 @@ rstan::stan_rhat(fit)
 
 # Extract results --------------------------------------------------------------
 
-tpp_walk <- rstan::extract(fit, "pp_intention")[[1]]
-poll_bias <- rstan::extract(fit, "pp_poll_bias")[[1]]
+tpp_walk <- rstan::extract(fit, "walk")[[1]]
+poll_bias <- rstan::extract(fit, "poll_bias")[[1]]
 colnames(poll_bias) <- levels(df_national$pollster)[1:ncol(poll_bias)]
 
 # Extract coefficients
-beta_draws <- rstan::extract(fit, "mrp_beta")[[1]]
-alpha_draws <-  rstan::extract(fit, "mrp_tpp_curr")[[1]]
+beta_draws <- rstan::extract(fit, "beta")[[1]]
+alpha_draws <-  rstan::extract(fit, "tpp_div_curr")[[1]]
 
 # Post-stratify
 ps_x <- model.matrix(~ 0 + gender + age_group + education, data=ps)
+ps_x <- ps_x[, -1] # Don't need two columns for gender
+
 ps_theta <- ps_x %*% t(beta_draws) + t(alpha_draws)[as.numeric(ps$division), ]
 colnames(ps_theta) <- paste0("est[", 1:ncol(ps_theta), "]")
 
