@@ -12,17 +12,13 @@ intention, which evolves dynamically from week to week, that opinion
 polls measure, subject to some systematic bias specific the polling
 firm. Mathematically, we express this as
 
-$$
-\text{poll}_i \sim N(\pi_{t[i]} + b_{p[i]}, \sigma_{\text{poll}}^2)
-$$
-
-$$
-\pi_t \sim N(\pi_{t-1}, \sigma_\pi^2)
-$$
-
-$$
-b_p \sim N(0, \sigma_b^2)
-$$
+``` math
+\begin{align*}
+\text{poll}_i &\sim N(\pi_{t[i]} + b_{p[i]}, \sigma_{\text{poll}}^2) \\
+\pi_t         &\sim N(\pi_{t-1}, \sigma_\pi^2) \\
+b_p           &\sim N(0, \sigma_b^2)
+\end{align*}
+```
 
 where $\pi_{t[i]}$ denotes the intention at the time corresponding to
 poll $i$, and $b_{p[i]}$ the bias of the pollster corresponding to poll
@@ -44,20 +40,16 @@ We then pass this naive estimate through to a regression model, which we
 train on record level TPP voting intention data. For simplicity we use a
 linear probability model,
 
-$$
-y_i \sim \text{Bernoulli}(\phi_i)
-$$
-
-$$
-\phi_i  \sim N(\eta_i, \sigma_p^2)
-$$
-
-$$
-\eta_i  =  \alpha_{\text{division}[i]} + 
+``` math
+\begin{align*}
+y_i     &\sim \text{Bernoulli}(\phi_i) \\
+\phi_i  &\sim N(\eta_i, \sigma_p^2) \\
+\eta_i  &=  \alpha_{\text{division}[i]} + 
   \beta_{\text{age group}[i]} + 
   \gamma_{\text{sex}[i]} + 
-  \delta_{\text{education level}[i]},
-$$
+  \delta_{\text{education level}[i]}
+\end{align*}
+```
 
 where $y_i$ is binary variable representing TPP support for the ALP,
 $\alpha_{\text{division}[i]}$ represents our naive estimate for the
@@ -68,12 +60,14 @@ corresponding to record $i$ on voting intention.
 
 We use normal priors on each of the effect terms
 
-$$
-\alpha_d \sim N(\tilde \phi_d, 5); \, 
-\beta_a  \sim N(0, 5); \,
-\gamma_s \sim N(0, 2); \,
-\delta_e \sim N(0, 5)
-$$
+``` math
+\begin{align*}
+\alpha_d &\sim N(\tilde \phi_d, 5) \\ 
+\beta_a  &\sim N(0, 5) \\
+\gamma_s &\sim N(0, 2) \\
+\delta_e &\sim N(0, 5)
+\end{align*}
+```
 
 where $\tilde \phi_d$ is the naive estimate for division $d$. The
 information these priors encode is roughly that we aren’t very confident
