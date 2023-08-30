@@ -98,13 +98,18 @@ See `plots/estimates_page*.png` for similar plots of the other electorates.
 We can use the raw estimates shown above to frame more easily comprehensible predictions to compare to the actual results. We use two methods. The first classes seats into one of 7 categories using the central estimate of TPP (ALP) support in each electorate,
 
 ```{r echo=FALSE}
+my_flextable <- function(...) {
+  flextable::flextable(...) |> 
+    flextable::bg(bg = "white", part = "all")
+}
+
 ps_pred1 <-  readRDS("outputs/seat_predictionsv1.Rds")
 
 table(ps_pred1$prediction, ps_pred1$result) |> 
   as.data.frame() |> 
   dplyr::select(prediction=Var1, result=Var2, n=Freq) |> 
   tidyr::pivot_wider(names_from = result, values_from = n, values_fill = 0) |> 
-  flextable::flextable() |> 
+  my_flextable() |>  
   flextable::bg(i=1:3, j = 2:5, "lightgreen") |> 
   flextable::bg(i=5:7, j = 6:9, "lightgreen") |>
   flextable::bg(i=1:3, j = 6:9, "orange") |> 
@@ -120,7 +125,7 @@ table(ps_pred2$prediction, ps_pred2$result) |>
   as.data.frame() |> 
   dplyr::select(prediction=Var1, result=Var2, n=Freq) |> 
   tidyr::pivot_wider(names_from = result, values_from = n, values_fill = 0) |> 
-  flextable::flextable() |> 
+  my_flextable() |> 
   flextable::bg(i=1:5, j = 2:5, "lightgreen") |> 
   flextable::bg(i=7:11, j = 6:9, "lightgreen") |>
   flextable::bg(i=1:5, j = 6:9, "orange") |> 
@@ -138,7 +143,7 @@ Finally we can obtain a prediction for which way the election as a whole will fa
 ps_sim <- readRDS("outputs/election_simulations.Rds")
 ps_sim |> 
   dplyr::summarise(n = sum(nseats > 75), N = dplyr::n(), p = 100*n/N) |> 
-  flextable::flextable()
+  my_flextable()
 ```
 
 Thus we see that of our 10,000 simulations, the ALP manages to achieve a majority (i.e. win >75 seats) in under 40% of them. We would, therefore, predict an ALP loss in 2019.
