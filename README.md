@@ -152,7 +152,7 @@ therefore, predict an ALP loss in 2019.
 
 Given that this is exactly the opposite of what one might guess looking
 at raw polls alone, and that 2019 was a notorious miss in terms of
-election predictions – with many analysts predicting an ALP win, we can
+election predictions, with many analysts predicting an ALP win, we can
 feel very satisfied with this result.
 
 # Diagnostics.
